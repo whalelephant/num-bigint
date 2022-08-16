@@ -2450,12 +2450,14 @@ impl ToPrimitive for BigInt {
     }
 
     #[inline]
+    #[cfg(not(feature = "no-f64-convert-opcode"))]
     fn to_f32(&self) -> Option<f32> {
         let n = self.data.to_f32()?;
         Some(if self.sign == Minus { -n } else { n })
     }
 
     #[inline]
+    #[cfg(not(feature = "no-f64-convert-opcode"))]
     fn to_f64(&self) -> Option<f64> {
         let n = self.data.to_f64()?;
         Some(if self.sign == Minus { -n } else { n })
@@ -2774,7 +2776,9 @@ impl_to_bigint!(u32, FromPrimitive::from_u32);
 impl_to_bigint!(u64, FromPrimitive::from_u64);
 impl_to_bigint!(u128, FromPrimitive::from_u128);
 
+#[cfg(not(feature = "no-f64-convert-opcode"))]
 impl_to_bigint!(f32, FromPrimitive::from_f32);
+#[cfg(not(feature = "no-f64-convert-opcode"))]
 impl_to_bigint!(f64, FromPrimitive::from_f64);
 
 impl BigInt {

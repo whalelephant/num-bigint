@@ -63,6 +63,7 @@ default-features = false
 [features]
 default = ["std"]
 std = ["num-integer/std", "num-traits/std"]
+no-f64-convert-opcode = []
 
 [build-dependencies]
 autocfg = "1"

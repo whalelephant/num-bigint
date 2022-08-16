@@ -15,6 +15,7 @@ use core::ops::{
     Mul, MulAssign, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
 };
 use core::str::{self, FromStr};
+#[cfg(not(feature = "no-f64-convert-opcode"))]
 use core::{f32, f64};
 use core::{u32, u64, u8};
 
@@ -22,6 +23,7 @@ use core::{u32, u64, u8};
 use serde;
 
 use num_integer::{Integer, Roots};
+#[cfg(not(feature = "no-f64-convert-opcode"))]
 use num_traits::float::FloatCore;
 use num_traits::{
     CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, FromPrimitive, Num, One, Pow, ToPrimitive,
@@ -233,13 +235,19 @@ fn from_radix_digits_be(v: &[u8], radix: u32) -> BigUint {
 
     #[cfg(feature = "std")]
     let radix_log2 = f64::from(radix).log2();
-    #[cfg(not(feature = "std"))]
+    #[cfg(not(any(feature = "std", feature = "no-f64-convert-opcode")))]
     let radix_log2 = ilog2(radix.next_power_of_two()) as f64;
 
     // Estimate how big the result will be, so we can pre-allocate it.
+    #[cfg(not(feature = "no-f64-convert-opcode"))]
     let bits = radix_log2 * v.len() as f64;
+
+    #[cfg(not(feature = "no-f64-convert-opcode"))]
     let big_digits = (bits / big_digit::BITS as f64).ceil();
+    #[cfg(not(feature = "no-f64-convert-opcode"))]
     let mut data = Vec::with_capacity(big_digits.to_usize().unwrap_or(0));
+    #[cfg(feature = "no-f64-convert-opcode")]
+    let mut data = Vec::new();
 
     let (base, power) = get_radix_base(radix, big_digit::BITS);
     let radix = radix as BigDigit;
@@ -1868,6 +1876,7 @@ impl ToPrimitive for BigUint {
     }
 
     #[inline]
+    #[cfg(not(feature = "no-f64-convert-opcode"))]
     fn to_f32(&self) -> Option<f32> {
         let mantissa = high_bits_to_u64(self);
         let exponent = self.bits() - u64::from(fls(mantissa));
@@ -1885,6 +1894,7 @@ impl ToPrimitive for BigUint {
     }
 
     #[inline]
+    #[cfg(not(feature = "no-f64-convert-opcode"))]
     fn to_f64(&self) -> Option<f64> {
         let mantissa = high_bits_to_u64(self);
         let exponent = self.bits() - u64::from(fls(mantissa));
@@ -1970,6 +1980,7 @@ impl FromPrimitive for BigUint {
     }
 
     #[inline]
+    #[cfg(not(feature = "no-f64-convert-opcode"))]
     fn from_f64(mut n: f64) -> Option<BigUint> {
         // handle NAN, INFINITY, NEG_INFINITY
         if !n.is_finite() {
@@ -2104,7 +2115,9 @@ impl_to_biguint!(u32, FromPrimitive::from_u32);
 impl_to_biguint!(u64, FromPrimitive::from_u64);
 impl_to_biguint!(u128, FromPrimitive::from_u128);
 
+#[cfg(not(feature = "no-f64-convert-opcode"))]
 impl_to_biguint!(f32, FromPrimitive::from_f32);
+#[cfg(not(feature = "no-f64-convert-opcode"))]
 impl_to_biguint!(f64, FromPrimitive::from_f64);
 
 // Extract bitwise digits that evenly divide BigDigit
@@ -2187,12 +2200,16 @@ fn to_radix_digits_le(u: &BigUint, radix: u32) -> Vec<u8> {
 
     #[cfg(feature = "std")]
     let radix_log2 = f64::from(radix).log2();
-    #[cfg(not(feature = "std"))]
+    #[cfg(not(any(feature = "std", feature = "no-f64-convert-opcode")))]
     let radix_log2 = ilog2(radix) as f64;
 
     // Estimate how big the result will be, so we can pre-allocate it.
+    #[cfg(not(feature = "no-f64-convert-opcode"))]
     let radix_digits = ((u.bits() as f64) / radix_log2).ceil();
+    #[cfg(not(feature = "no-f64-convert-opcode"))]
     let mut res = Vec::with_capacity(radix_digits.to_usize().unwrap_or(0));
+    #[cfg(feature = "no-f64-convert-opcode")]
+    let mut res = Vec::new();
 
     let mut digits = u.clone();
 
