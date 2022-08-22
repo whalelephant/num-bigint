@@ -237,17 +237,21 @@ fn from_radix_digits_be(v: &[u8], radix: u32) -> BigUint {
     let radix_log2 = f64::from(radix).log2();
     #[cfg(not(any(feature = "std", feature = "no-f64-convert-opcode")))]
     let radix_log2 = ilog2(radix.next_power_of_two()) as f64;
+    #[cfg(feature = "no-f64-convert-opcode")]
+    let radix_log2 = ilog2(radix.next_power_of_two()) as u64;
 
     // Estimate how big the result will be, so we can pre-allocate it.
     #[cfg(not(feature = "no-f64-convert-opcode"))]
     let bits = radix_log2 * v.len() as f64;
+    #[cfg(feature = "no-f64-convert-opcode")]
+    let bits = radix_log2 * v.len() as u64;
 
     #[cfg(not(feature = "no-f64-convert-opcode"))]
     let big_digits = (bits / big_digit::BITS as f64).ceil();
-    #[cfg(not(feature = "no-f64-convert-opcode"))]
-    let mut data = Vec::with_capacity(big_digits.to_usize().unwrap_or(0));
     #[cfg(feature = "no-f64-convert-opcode")]
-    let mut data = Vec::new();
+    let big_digits = (bits / big_digit::BITS as u64) + 1; // manually add 1 to ensure size
+
+    let mut data = Vec::with_capacity(big_digits.to_usize().unwrap_or(0));
 
     let (base, power) = get_radix_base(radix, big_digit::BITS);
     let radix = radix as BigDigit;
@@ -2202,14 +2206,16 @@ fn to_radix_digits_le(u: &BigUint, radix: u32) -> Vec<u8> {
     let radix_log2 = f64::from(radix).log2();
     #[cfg(not(any(feature = "std", feature = "no-f64-convert-opcode")))]
     let radix_log2 = ilog2(radix) as f64;
+    #[cfg(feature = "no-f64-convert-opcode")]
+    let radix_log2 = ilog2(radix) as u64;
 
     // Estimate how big the result will be, so we can pre-allocate it.
     #[cfg(not(feature = "no-f64-convert-opcode"))]
     let radix_digits = ((u.bits() as f64) / radix_log2).ceil();
-    #[cfg(not(feature = "no-f64-convert-opcode"))]
-    let mut res = Vec::with_capacity(radix_digits.to_usize().unwrap_or(0));
     #[cfg(feature = "no-f64-convert-opcode")]
-    let mut res = Vec::new();
+    let radix_digits = ((u.bits() as u64) / radix_log2) + 1;
+
+    let mut res = Vec::with_capacity(radix_digits.to_usize().unwrap_or(0));
 
     let mut digits = u.clone();
 
